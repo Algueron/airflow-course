@@ -1,6 +1,16 @@
 from airflow.sdk import dag, task
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk.bases.sensor import PokeReturnValue
+from airflow.providers.standard.operators.python import PythonOperator
+
+def _extract_user(ti):
+    fake_user = ti.xcom_pull(task_ids="is_api_available")
+    return {
+        "id": fake_user["id"],
+        "firstname": fake_user["personalInfo"]["firstName"],
+        "lastname": fake_user["personalInfo"]["lastName"],
+        "email": fake_user["personalInfo"]["email"]
+    }
 
 @dag
 def user_processing():
@@ -31,6 +41,11 @@ def user_processing():
             condition = False
             fake_user = None
         return PokeReturnValue(is_done=condition, xcom_value=fake_user)
+    
+    extract_user = PythonOperator(
+        task_id="extract_user",
+        python_callable=_extract_user
+    )
 
     is_api_available()
 

@@ -9,3 +9,14 @@ def user(self) -> dict[str]:
 
     r = requests.get(self.uri)
     return r.json()
+
+@asset(
+    schedule=user
+)
+def user_location(user: Asset, context: Context) -> dict[str]:
+    user_data = context['ti'].xcom_pull(
+        dag_id=user.name,
+        task_ids=user.name,
+        include_prior_dates=True,
+    )
+    return user_data[0]['results'][0]['location']

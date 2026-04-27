@@ -12,7 +12,7 @@ def user_processing():
         conn_id="postgres",
         sql="""
             CREATE TABLE IF NOT EXISTS users (
-                id IN PRIMARY KEY,
+                id INT PRIMARY KEY,
                 firstname VARCHAR(255),
                 lastname VARCHAR(255),
                 email VARCHAR(255),

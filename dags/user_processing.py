@@ -1,6 +1,7 @@
 from airflow.sdk import dag, task
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk.bases.sensor import PokeReturnValue
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 
 @dag
@@ -51,10 +52,18 @@ def user_processing():
             writer.writeheader()
             writer.writerow(user_info)
 
+    @task
+    def store_user():
+        hook = PostgresHook(postgres_conn_id="postgres")
+        hook.copy_expert(
+            sql="COPY users FROM STDIN WITH CSV HEADER",
+            filename="/tmp/user_info.csv"
+        )
 
     fake_user = is_api_available()
     user_info = extract_user(fake_user)
     process_user(user_info)
+    store_user()
 
 
 user_processing()

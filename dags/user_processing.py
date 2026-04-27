@@ -41,9 +41,20 @@ def user_processing():
             "lastname": fake_user["personalInfo"]["lastName"],
             "email": fake_user["personalInfo"]["email"]
         }
+    
+    @task
+    def process_user(user_info):
+        import csv
+
+        with open("/tmp/user_info.csv", "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=user_info.keys())
+            writer.writeheader()
+            writer.writerow(user_info)
+
 
     fake_user = is_api_available()
     user_info = extract_user(fake_user)
+    process_user(user_info)
 
 
 user_processing()

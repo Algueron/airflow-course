@@ -1,6 +1,6 @@
 from typing import Any, Callable, ClassVar, Collection, Mapping
 from collections.abc import Sequence
-from airflow.sdk.bases.decorator import DecoratedOperator
+from airflow.sdk.bases.decorator import DecoratedOperator, TaskDecorator, task_decorator_factory
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk.definitions._internal.types import SET_DURING_EXECUTION
 from airflow.sdk.definitions.context import Context
@@ -68,3 +68,14 @@ class _SQLDecoratedOperator(DecoratedOperator, SQLExecuteQueryOperator):
         context["ti"].render_templates()
 
         return super().execute(context)
+
+def sql_task(
+        python_callable: Callable | None = None,
+        **kwargs
+) -> TaskDecorator:
+    
+    return task_decorator_factory(
+        python_callable=python_callable,
+        decorated_operator_class=_SQLDecoratedOperator,
+        **kwargs
+    )

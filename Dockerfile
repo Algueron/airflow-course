@@ -1,5 +1,6 @@
-FROM apache/airflow:3.0.6
+FROM apache/airflow:3.1.5
 
-COPY my-sdk /opt/airflow/my-sdk
+COPY requirements.txt /requirements.txt
 
-RUN pip install -e /opt/airflow/my-sdk
+# Install additional requirements
+RUN pip install --no-cache-dir -r /requirements.txt

@@ -1,2 +1,4 @@
 *.pyc
 logs/
+venv/
+.vscode/

@@ -1,4 +1,4 @@
-from airflow.sdk import dag, task
+from airflow.sdk import dag, task, Param
 from datetime import datetime
 
 @dag(
@@ -7,7 +7,14 @@ from datetime import datetime
     schedule="@daily",
     tags=["new"],
     params={
-        "extra_input": 10
+        "extra_input": Param(
+            default=10,
+            type="integer",
+            description="This extra input is used to multiply input_a",
+            section="Important Parameters",
+            minimum=1,
+            maximum=100
+        )
     }
 )
 def new_dag():

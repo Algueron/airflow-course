@@ -14,6 +14,20 @@ from datetime import datetime
             section="Important Parameters",
             minimum=1,
             maximum=100
+        ),
+        "extra_date": Param(
+            default="2025-01-01T00:00:00",
+            type="string",
+            format="date-time"
+        ),
+        "extra_boolean": Param(
+            default=True,
+            type="boolean"
+        ),
+        "extra_enum": Param(
+            default="value1",
+            type="string",
+            enum=["value1", "value_2", "value_3"]
         )
     }
 )

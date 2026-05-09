@@ -11,11 +11,16 @@ def new_dag():
 
     @task
     def extract_data():
-        return 42
+        return {
+            'input_a': 42,
+            'input_b': 43
+        }
     
     @task
     def transform_data(data):
-        return data * 2
+        data['input_a'] = data['input_a'] * 2
+        data['input_b'] = data['input_b'] * 3
+        return data
     
     result = extract_data()
     transform_data(result)

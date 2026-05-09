@@ -9,7 +9,7 @@ from datetime import datetime
 )
 def new_dag():
 
-    @task
+    @task(multiple_outputs=True)
     def extract_data():
         return {
             'input_a': 42,
@@ -17,12 +17,15 @@ def new_dag():
         }
     
     @task
-    def transform_data(data):
-        data['input_a'] = data['input_a'] * 2
-        data['input_b'] = data['input_b'] * 3
-        return data
+    def transform_a(input_a):
+        return input_a * 2
     
-    result = extract_data()
-    transform_data(result)
+    @task
+    def transform_b(input_b):
+        return input_b * 3
+    
+    values = extract_data()
+    transform_a(values['input_a'])
+    transform_b(values['input_b'])
 
 new_dag()

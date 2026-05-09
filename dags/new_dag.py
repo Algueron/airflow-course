@@ -5,7 +5,10 @@ from datetime import datetime
     dag_id="new_dag",
     start_date=datetime(2025, 1, 1),
     schedule="@daily",
-    tags=["new"]
+    tags=["new"],
+    params={
+        "extra_input": 10
+    }
 )
 def new_dag():
 
@@ -17,8 +20,9 @@ def new_dag():
         }
     
     @task
-    def transform_a(input_a):
-        return input_a * 2
+    def transform_a(input_a, params=None): # The None default value is just to indicate this is a built-in Airflow parameter
+        extra_input = params['extra_input']
+        return input_a * 2 * extra_input
     
     @task
     def transform_b(input_b):

@@ -1,7 +1,13 @@
 from airflow.sdk import dag, task, task_group
 from datetime import datetime
 
-API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+
+@task
+def fetch_currency(currency: str):
+    import requests
+    response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={currency}&vs_currencies=usd")
+    return response.json()[currency]['usd']
+
 
 @dag(
     start_date=datetime(2025, 1, 1),
@@ -19,32 +25,14 @@ def my_dag():
         }
     )
     def fetch_crypto_prices():
-        @task
-        def fetch_bitcoin():
-            import requests
-            response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
-            return response.json()['bitcoin']['usd']
-
-        @task(
-            priority_weight=100
-        )
-        def fetch_ethereum():
-            import requests
-            response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
-            return response.json()['ethereum']['usd']
-
-        @task
-        def fetch_solana():
-            import requests
-            response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd")
-            return response.json()['solana']['usd']
 
         return {
-            "btc": fetch_bitcoin(),
-            "eth": fetch_ethereum(),
-            "sol": fetch_solana()
+            "btc": fetch_currency.override(task_id="fetch_bitcoin")(currency="bitcoin"),
+            "eth": fetch_currency.override(task_id="fetch_ethereum", priority_weight=100)(currency="ethereum"),
+            "sol": fetch_currency.override(task_id="fetch_solana")(currency="solana")
         }
-    
+
+
     @task_group
     def process_data(prices):
 
@@ -59,11 +47,14 @@ def my_dag():
         average = calculate_average(prices)
         print_average(average)
 
+
     @task
     def final_report():
         print("Crypto data pipeline completed successfully")
 
+
     prices = fetch_crypto_prices()
     process_data(prices) >> final_report()
+
 
 my_dag()

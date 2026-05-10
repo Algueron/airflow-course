@@ -9,9 +9,17 @@ file_a = Asset(
     }
 )
 
+file_b = Asset(
+    uri="file:///tmp/file_b.txt",
+    name="file_b",
+    extra={
+        "description": "File B contains the data to be sent"
+    }
+)
+
 @dag(
     start_date=datetime(2025, 1, 1),
-    schedule=[file_a],
+    schedule=[file_a, file_b],
     max_active_runs=1
 )
 def consumer():

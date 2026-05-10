@@ -25,7 +25,9 @@ def my_dag():
             response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
             return response.json()['bitcoin']['usd']
 
-        @task
+        @task(
+            priority_weight=100
+        )
         def fetch_ethereum():
             import requests
             response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")

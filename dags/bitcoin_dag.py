@@ -1,4 +1,4 @@
-from airflow.sdk import dag, task, task_group
+from airflow.sdk import dag, task, task_group, setup, teardown
 from datetime import datetime
 
 
@@ -9,6 +9,15 @@ def fetch_currency(currency: str):
     return response.json()[currency]['usd']
 
 
+@task
+def write_price(currency:str, price: float, workspace: str) -> str:
+    import json
+    from pathlib import Path
+    out = Path(workspace) / f"{currency}.json"
+    out.write_text(json.dumps({"currency": currency, "usd": price}))
+    return str(out)
+
+
 @dag(
     start_date=datetime(2025, 1, 1),
     schedule="@daily",
@@ -17,7 +26,23 @@ def fetch_currency(currency: str):
         "retries": 2
     }
 )
-def my_dag():
+def crypto_dag():
+
+    @setup
+    def create_workspace(**context):
+        import os
+        from pathlib import Path
+
+        base = Path(f"/tmp/airflow_workspaces") / context["dag"].dag_id / context["run_id"]
+        os.makedirs(base, exist_ok=True)
+        return str(base)
+    
+
+    @teardown(on_failure_fail_dagrun=True)
+    def cleanup_workspace(path: str) -> None:
+        import shutil
+        shutil.rmtree(path, ignore_errors=True)
+
 
     @task_group(
         default_args={
@@ -30,6 +55,16 @@ def my_dag():
             "btc": fetch_currency.override(task_id="fetch_bitcoin")(currency="bitcoin"),
             "eth": fetch_currency.override(task_id="fetch_ethereum", priority_weight=100)(currency="ethereum"),
             "sol": fetch_currency.override(task_id="fetch_solana")(currency="solana")
+        }
+    
+
+    @task_group
+    def write_prices(prices: dict, workspace: str):
+
+        return {
+            "path_btc": write_price.override(task_id="write_bitcoin")(currency="bitcoin", price=prices["btc"], workspace=workspace),
+            "path_eth": write_price.override(task_id="write_ethereum")(currency="ethereum", price=prices["eth"], workspace=workspace),
+            "path_sol": write_price.override(task_id="write_solana")(currency="solana", price=prices["sol"], workspace=workspace)
         }
 
 
@@ -53,8 +88,12 @@ def my_dag():
         print("Crypto data pipeline completed successfully")
 
 
-    prices = fetch_crypto_prices()
-    process_data(prices) >> final_report()
+    ws = create_workspace()
+    with cleanup_workspace(ws):
+        prices = fetch_crypto_prices()
+        writes = write_prices(prices, ws)
+        processed = process_data(prices)
+        [processed, *list(writes.values())] >> final_report()
 
 
-my_dag()
+crypto_dag()

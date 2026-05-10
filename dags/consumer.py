@@ -11,15 +11,15 @@ file_a = Asset(
 
 @dag(
     start_date=datetime(2025, 1, 1),
-    schedule="@daily",
+    schedule=[file_a],
     max_active_runs=1
 )
-def sender():
+def consumer():
 
-    @task(outlets=[file_a])
-    def my_task():
+    @task
+    def consume_file_a():
         pass
-    
-    my_task()
 
-sender()
+    consume_file_a()
+        
+consumer()

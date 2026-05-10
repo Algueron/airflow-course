@@ -1,22 +1,7 @@
-from airflow.sdk import Asset, dag, task
+from airflow.sdk import Asset, dag, task, AssetAlias, Metadata
 from pendulum import datetime
 
-file_a = Asset(
-    uri="file:///tmp/file_a.txt",
-    name="file_a",
-    extra={
-        "description": "File A contains the data to be sent"
-    }
-)
-
-file_b = Asset(
-    uri="file:///tmp/file_b.txt",
-    name="file_b",
-    extra={
-        "description": "File B contains the data to be sent"
-    }
-)
-
+alias_name = "alias_file_a"
 
 @dag(
     start_date=datetime(2025, 1, 1),
@@ -25,15 +10,22 @@ file_b = Asset(
 )
 def sender():
 
-    @task(outlets=[file_a])
-    def my_task():
-        raise Exception("This is a test error")
-
-    @task(outlets=[file_b])
-    def my_task_2():
-        print("This is a test print")
+    @task(outlets=[AssetAlias(alias_name)])
+    def create_file():
+        path: str = "/tmp/file_a.txt"
+        with open(path, "w") as f:
+            f.write("This is a test print")
+        yield Metadata(
+            asset=Asset(
+                name="file_a",
+                uri=f"file://{path}",
+                extra={
+                    "description": "File contains the data to be sent"
+                }
+            ),
+            alias=AssetAlias(alias_name)
+        )
     
-    my_task()
-    my_task_2()
+    create_file()
 
 sender()

@@ -10,9 +10,11 @@ alias_name = "alias_file_a"
 )
 def consumer():
 
-    @task
-    def consume_file_a():
-        pass
+    @task(inlets=AssetAlias(alias_name))
+    def consume_file_a(inlet_events=None):
+        events = inlet_events[AssetAlias(alias_name)]
+        with open(events[-1].asset.uri, "r") as f:
+            print(f.read())
 
     consume_file_a()
         

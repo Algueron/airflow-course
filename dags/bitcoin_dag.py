@@ -6,11 +6,18 @@ API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=u
 @dag(
     start_date=datetime(2025, 1, 1),
     schedule="@daily",
-    tags=['new']
+    tags=['new'],
+    default_args={
+        "retries": 2
+    }
 )
 def my_dag():
 
-    @task_group
+    @task_group(
+        default_args={
+            "pool": "fetch_crypto_prices"
+        }
+    )
     def fetch_crypto_prices():
         @task
         def fetch_bitcoin():

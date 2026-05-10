@@ -1,4 +1,4 @@
-from airflow.sdk import dag, task
+from airflow.sdk import dag, task, task_group
 from datetime import datetime
 
 API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
@@ -10,26 +10,51 @@ API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=u
 )
 def my_dag():
 
-    @task
-    def fetch_bitcoin_price():
-        import requests
-        response = requests.get(API)
-        return response.json()['bitcoin']['usd']
-    
-    @task.bash
-    def print_bitcoin_price(bitcoin_price):
-        return f"echo '{bitcoin_price}'"
-    
-    @task
-    def add_bitcoin_cap(bitcoin_price):
-        import requests
-        response = requests.get(f"{API}&include_market_cap=true")
-        market_cap = response.json()['bitcoin']['usd_market_cap']
+    @task_group
+    def fetch_crypto_prices():
+        @task
+        def fetch_bitcoin():
+            import requests
+            response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+            return response.json()['bitcoin']['usd']
+
+        @task
+        def fetch_ethereum():
+            import requests
+            response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+            return response.json()['ethereum']['usd']
+
+        @task
+        def fetch_solana():
+            import requests
+            response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd")
+            return response.json()['solana']['usd']
+
         return {
-            "market_cap": market_cap,
-            "bitcoin_price": bitcoin_price
+            "btc": fetch_bitcoin(),
+            "eth": fetch_ethereum(),
+            "sol": fetch_solana()
         }
     
-    add_bitcoin_cap(print_bitcoin_price(fetch_bitcoin_price()))
+    @task_group
+    def process_data(prices):
+
+        @task
+        def calculate_average(prices):
+            return (prices['btc'] + prices['eth'] + prices['sol']) / 3
+        
+        @task.bash
+        def print_average(average):
+            return f"echo 'The average price is {average}'"
+        
+        average = calculate_average(prices)
+        print_average(average)
+
+    @task
+    def final_report():
+        print("Crypto data pipeline completed successfully")
+
+    prices = fetch_crypto_prices()
+    process_data(prices) >> final_report()
 
 my_dag()
